@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Supply Chain Crisis Manager</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#0f1117;color:#e8eaf6;min-height:100vh;overflow-x:hidden}
+.screen{display:none;min-height:100vh;padding:24px}
+.screen.active{display:flex;flex-direction:column;align-items:center}
+h1{font-size:2rem;font-weight:700;color:#7c83f5;text-align:center;margin-bottom:8px}
+h2{font-size:1.4rem;font-weight:600;color:#a5aeff;margin-bottom:16px}
+h3{font-size:1.1rem;font-weight:600;color:#c5c8ff;margin-bottom:8px}
+p{color:#9fa3c7;line-height:1.6;margin-bottom:8px}
+.card{background:#1a1d2e;border:1px solid #2a2d45;border-radius:16px;padding:24px;width:100%;max-width:760px;margin-bottom:16px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 28px;border:none;border-radius:12px;font-size:1rem;font-weight:600;cursor:pointer;transition:.2s}
+.btn-primary{background:linear-gradient(135deg,#5c60f5,#8b5cf6);color:#fff}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 20px rgba(92,96,245,.4)}
+.btn-secondary{background:#2a2d45;color:#a5aeff;border:1px solid #3a3d60}
+.btn-secondary:hover{background:#3a3d60}
+.btn-danger{background:#e74c3c;color:#fff}
+.btn-sm{padding:8px 16px;font-size:.85rem;border-radius:8px}
+input[type=text],input[type=number]{background:#12152b;border:1px solid #2a2d45;border-radius:10px;padding:12px 16px;color:#e8eaf6;font-size:1rem;width:100%;margin-bottom:12px}
+input:focus{outline:none;border-color:#5c60f5}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.option-card{background:#12152b;border:2px solid #2a2d45;border-radius:12px;padding:16px;cursor:pointer;transition:.2s;text-align:center}
+.option-card:hover{border-color:#5c60f5;background:#1a1d3a}
+.option-card.selected{border-color:#7c83f5;background:#1e2040}
+.option-card .label{font-weight:700;font-size:.95rem;color:#e8eaf6;margin-bottom:4px}
+.option-card .desc{font-size:.78rem;color:#6b7094;line-height:1.4}
+.option-card .tag{display:inline-block;font-size:.7rem;padding:2px 8px;border-radius:6px;margin-top:6px;font-weight:600}
+.tag-green{background:#1a3a2a;color:#4ade80}
+.tag-red{background:#3a1a1a;color:#f87171}
+.tag-yellow{background:#3a3010;color:#fbbf24}
+.tag-blue{background:#1a2a3a;color:#60a5fa}
+.tag-purple{background:#2a1a3a;color:#c084fc}
+.stat-bar{background:#12152b;border-radius:8px;height:10px;width:100%;margin-top:4px;overflow:hidden}
+.stat-fill{height:100%;border-radius:8px;transition:.5s}
+.stat-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.stat-label{font-size:.8rem;color:#9fa3c7}
+.stat-val{font-size:.85rem;font-weight:600;color:#e8eaf6}
+.event-box{background:#1e1040;border:1px solid #5c3aaa;border-radius:12px;padding:16px;margin-bottom:12px;animation:pulse .4s ease}
+@keyframes pulse{from{transform:scale(.98)}to{transform:scale(1)}}
+.event-icon{font-size:2rem;margin-bottom:8px}
+.event-title{font-size:1rem;font-weight:700;color:#c084fc}
+.event-desc{font-size:.85rem;color:#9fa3c7}
+.leaderboard-row{display:flex;align-items:center;gap:12px;padding:12px 16px;background:#12152b;border-radius:10px;margin-bottom:8px}
+.rank-badge{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem}
+.rank-1{background:linear-gradient(135deg,#ffd700,#ffaa00);color:#1a1200}
+.rank-2{background:linear-gradient(135deg,#c0c0c0,#a0a0a0);color:#1a1a1a}
+.rank-3{background:linear-gradient(135deg,#cd7f32,#a05a20);color:#fff}
+.rank-other{background:#2a2d45;color:#9fa3c7}
+.player-score{margin-left:auto;font-weight:700;color:#7c83f5}
+.delta{font-size:.75rem;margin-left:6px}
+.delta.pos{color:#4ade80}
+.delta.neg{color:#f87171}
+.room-code{font-size:3rem;font-weight:900;letter-spacing:8px;color:#7c83f5;text-align:center;padding:16px;background:#12152b;border-radius:12px;margin:12px 0}
+.timer-ring{width:70px;height:70px;position:relative;display:inline-block}
+.timer-svg{transform:rotate(-90deg)}
+.timer-text{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:1.2rem;font-weight:700;color:#7c83f5}
+.phase-indicator{display:flex;gap:8px;margin-bottom:20px}
+.phase-dot{width:10px;height:10px;border-radius:50%;background:#2a2d45}
+.phase-dot.done{background:#4ade80}
+.phase-dot.active{background:#7c83f5;animation:blink 1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+.tooltip{position:relative}
+.tooltip:hover .tip{display:block}
+.tip{display:none;position:absolute;bottom:110%;left:50%;transform:translateX(-50%);background:#2a2d45;border:1px solid #3a3d60;border-radius:8px;padding:8px 12px;font-size:.75rem;color:#c5c8ff;white-space:nowrap;z-index:99}
+.forecast-bar{background:#1a1d2e;border-radius:8px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.qty-ctrl{display:flex;align-items:center;gap:12px}
+.qty-btn{width:36px;height:36px;border-radius:50%;background:#2a2d45;border:none;color:#a5aeff;font-size:1.2rem;cursor:pointer;font-weight:700}
+.qty-btn:hover{background:#3a3d60}
+.qty-display{font-size:1.4rem;font-weight:700;color:#7c83f5;min-width:60px;text-align:center}
+.result-metric{text-align:center;padding:16px}
+.result-metric .val{font-size:2rem;font-weight:800;color:#7c83f5}
+.result-metric .lbl{font-size:.8rem;color:#6b7094;margin-top:4px}
+.msg{font-size:.85rem;padding:10px 14px;border-radius:8px;margin-bottom:8px}
+.msg-info{background:#1a2040;color:#60a5fa;border:1px solid #2a3060}
+.msg-warn{background:#2a2000;color:#fbbf24;border:1px solid #3a3000}
+.msg-good{background:#0a2a10;color:#4ade80;border:1px solid #1a4020}
+.msg-bad{background:#2a0a0a;color:#f87171;border:1px solid #4a1a1a}
+.submitted-overlay{position:absolute;inset:0;background:rgba(15,17,23,.85);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:1.1rem;color:#4ade80;font-weight:700;gap:8px}
+.relative{position:relative}
+.connecting{animation:spin 1s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+#playerList{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.player-chip{background:#12152b;border:1px solid #2a2d45;border-radius:8px;padding:8px 12px;font-size:.85rem;color:#a5aeff;display:flex;align-items:center;gap:6px}
+.dot-green{width:8px;height:8px;border-radius:50%;background:#4ade80;flex-shrink:0}
+.progress-track{background:#12152b;border-radius:8px;height:8px;width:100%;overflow:hidden;margin:8px 0}
+.progress-fill{height:100%;background:linear-gradient(90deg,#5c60f5,#8b5cf6);transition:.3s}
+.round-indicator{display:flex;gap:6px;justify-content:center;margin:8px 0}
+.round-dot{width:28px;height:8px;border-radius:4px;background:#2a2d45}
+.round-dot.done{background:#4ade80}
+.round-dot.active{background:#7c83f5}
+.tabs{display:flex;gap:0;margin-bottom:16px;border:1px solid #2a2d45;border-radius:10px;overflow:hidden}
+.tab{flex:1;padding:10px;text-align:center;cursor:pointer;font-size:.85rem;color:#6b7094;background:#12152b;transition:.2s}
+.tab.active{background:#2a2d45;color:#e8eaf6;font-weight:600}
+.final-podium{display:flex;align-items:flex-end;justify-content:center;gap:12px;margin:20px 0}
+.podium-col{display:flex;flex-direction:column;align-items:center;gap:8px}
+.podium-block{width:90px;border-radius:8px 8px 0 0;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:1.1rem}
+.podium-1{background:linear-gradient(180deg,#ffd700,#b8860b);height:100px}
+.podium-2{background:linear-gradient(180deg,#c0c0c0,#808080);height:70px}
+.podium-3{background:linear-gradient(180deg,#cd7f32,#8b4513);height:50px}
+.podium-name{font-size:.8rem;color:#9fa3c7;text-align:center;max-width:90px;word-break:break-word}
+.outcome-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.outcome-item{background:#12152b;border-radius:10px;padding:12px}
+.outcome-label{font-size:.75rem;color:#6b7094;margin-bottom:2px}
+.outcome-value{font-size:1.1rem;font-weight:700;color:#e8eaf6}
+.outcome-value.pos{color:#4ade80}
+.outcome-value.neg{color:#f87171}
+</style>
+</head>
+<body>
+
+<!-- SCREEN 1: HOME -->
+<div class="screen active" id="screen-home">
+  <div style="max-width:700px;width:100%;margin:auto;padding-top:40px">
+    <div style="text-align:center;margin-bottom:32px">
+      <div style="font-size:3.5rem;margin-bottom:8px">🏭</div>
+      <h1>Supply Chain Crisis Manager</h1>
+      <p style="font-size:1.1rem;color:#7c83f5;margin-bottom:4px">An EV Battery Operations Simulation</p>
+      <p>Compete with 20–30 players. Make decisions, survive disruptions, top the leaderboard.</p>
+    </div>
+    <div class="card">
+      <h2>🎮 How to play</h2>
+      <div class="grid2" style="gap:16px;margin-top:8px">
+        <div><p><strong style="color:#e8eaf6">1. Choose role</strong><br>Host creates a room. Players join with a code.</p></div>
+        <div><p><strong style="color:#e8eaf6">2. Decide each round</strong><br>Pick supplier, transport & order quantity.</p></div>
+        <div><p><strong style="color:#e8eaf6">3. Face disruptions</strong><br>Random events hit — smart decisions reduce impact.</p></div>
+        <div><p><strong style="color:#e8eaf6">4. Score & learn</strong><br>Profit + satisfaction + sustainability = final score.</p></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>🏆 Scoring</h2>
+      <div class="grid3" style="margin-top:8px;gap:8px">
+        <div style="text-align:center;padding:12px;background:#12152b;border-radius:10px"><div style="font-size:1.5rem;font-weight:800;color:#7c83f5">40%</div><div style="font-size:.8rem;color:#6b7094">Profit</div></div>
+        <div style="text-align:center;padding:12px;background:#12152b;border-radius:10px"><div style="font-size:1.5rem;font-weight:800;color:#60a5fa">25%</div><div style="font-size:.8rem;color:#6b7094">Customer Satisfaction</div></div>
+        <div style="text-align:center;padding:12px;background:#12152b;border-radius:10px"><div style="font-size:1.5rem;font-weight:800;color:#4ade80">15%</div><div style="font-size:.8rem;color:#6b7094">Sustainability</div></div>
+        <div style="text-align:center;padding:12px;background:#12152b;border-radius:10px"><div style="font-size:1.5rem;font-weight:800;color:#fbbf24">10%</div><div style="font-size:.8rem;color:#6b7094">Inventory Efficiency</div></div>
+        <div style="text-align:center;padding:12px;background:#12152b;border-radius:10px"><div style="font-size:1.5rem;font-weight:800;color:#c084fc">10%</div><div style="font-size:.8rem;color:#6b7094">Supplier Reliability</div></div>
+      </div>
+    </div>
+    <div class="grid2" style="gap:12px;max-width:700px">
+      <button class="btn btn-primary" style="width:100%;justify-content:center;font-size:1.1rem;padding:16px" onclick="showHostSetup()">🏠 Host a Room</button>
+      <button class="btn btn-secondary" style="width:100%;justify-content:center;font-size:1.1rem;padding:16px" onclick="showJoin()">🔗 Join a Room</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 2: HOST SETUP -->
+<div class="screen" id="screen-host">
+  <div style="max-width:700px;width:100%;margin:auto;padding-top:32px">
+    <button class="btn btn-secondary btn-sm" onclick="showScreen('screen-home')" style="margin-bottom:16px">← Back</button>
+    <h1>Host a Room</h1>
+    <div class="card">
+      <h3>Your name</h3>
+      <input type="text" id="host-name" placeholder="Enter your name..." maxlength="20">
+      <h3>Number of rounds</h3>
+      <div class="grid3">
+        <div class="option-card" onclick="selectRounds(6,this)"><div class="label">6 rounds</div><div class="desc">~15 min</div></div>
+        <div class="option-card selected" onclick="selectRounds(8,this)"><div class="label">8 rounds</div><div class="desc">~20 min</div></div>
+        <div class="option-card" onclick="selectRounds(10,this)"><div class="label">10 rounds</div><div class="desc">~25 min</div></div>
+      </div>
+      <h3 style="margin-top:16px">Decision time per round</h3>
+      <div class="grid3">
+        <div class="option-card" onclick="selectTime(60,this)"><div class="label">60 sec</div><div class="desc">Fast</div></div>
+        <div class="option-card selected" onclick="selectTime(90,this)"><div class="label">90 sec</div><div class="desc">Standard</div></div>
+        <div class="option-card" onclick="selectTime(120,this)"><div class="label">120 sec</div><div class="desc">Relaxed</div></div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:20px" onclick="createRoom()">Create Room →</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 3: JOIN -->
+<div class="screen" id="screen-join">
+  <div style="max-width:500px;width:100%;margin:auto;padding-top:80px">
+    <button class="btn btn-secondary btn-sm" onclick="showScreen('screen-home')" style="margin-bottom:16px">← Back</button>
+    <h1>Join a Room</h1>
+    <div class="card">
+      <h3>Your name</h3>
+      <input type="text" id="join-name" placeholder="Enter your name..." maxlength="20">
+      <h3>Room code</h3>
+      <input type="text" id="join-code" placeholder="e.g. ALPHA7" maxlength="8" style="text-transform:uppercase;letter-spacing:4px;font-size:1.3rem;font-weight:700;text-align:center">
+      <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px" onclick="joinRoom()">Join Game →</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 4: LOBBY (Host) -->
+<div class="screen" id="screen-lobby">
+  <div style="max-width:700px;width:100%;margin:auto;padding-top:32px">
+    <h1>Lobby</h1>
+    <div class="card">
+      <p style="color:#9fa3c7;margin-bottom:4px">Share this code with players:</p>
+      <div class="room-code" id="display-code">—</div>
+      <p style="text-align:center;font-size:.85rem;color:#6b7094">Players join at this screen → "Join a Room"</p>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:16px">
+        <div id="player-count-label" style="color:#9fa3c7;font-size:.9rem">0 players joined</div>
+        <div style="color:#4ade80;font-size:.85rem" id="min-players-note">Minimum 2 to start</div>
+      </div>
+      <div id="playerList"></div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:20px" onclick="startGame()" id="start-btn">Start Game →</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 5: WAITING (Non-host) -->
+<div class="screen" id="screen-waiting">
+  <div style="max-width:500px;width:100%;margin:auto;padding-top:120px;text-align:center">
+    <div style="font-size:3rem;margin-bottom:16px" class="connecting">⏳</div>
+    <h2>Waiting for host to start...</h2>
+    <p>Room: <strong id="waiting-code" style="color:#7c83f5;letter-spacing:4px">—</strong></p>
+    <p id="waiting-players" style="margin-top:12px">Loading players...</p>
+    <div id="waiting-list" style="margin-top:12px"></div>
+  </div>
+</div>
+
+<!-- SCREEN 6: GAME ROUND -->
+<div class="screen" id="screen-game">
+  <div style="max-width:760px;width:100%;margin:auto;padding-top:20px">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div>
+        <div style="font-size:.8rem;color:#6b7094">ROUND</div>
+        <div style="font-size:1.4rem;font-weight:800;color:#7c83f5" id="round-label">1/8</div>
+      </div>
+      <div style="display:flex;gap:8px" id="round-dots"></div>
+      <div style="text-align:center">
+        <div id="timer-display" style="font-size:2rem;font-weight:800;color:#fbbf24">90</div>
+        <div style="font-size:.7rem;color:#6b7094">seconds</div>
+      </div>
+    </div>
+    <!-- Stats bar -->
+    <div class="card" style="padding:16px;margin-bottom:12px">
+      <div class="grid3" style="gap:8px">
+        <div><div class="stat-row"><span class="stat-label">💰 Cash</span><span class="stat-val" id="stat-cash">$5000</span></div></div>
+        <div><div class="stat-row"><span class="stat-label">📦 Inventory</span><span class="stat-val" id="stat-inv">50</span></div></div>
+        <div><div class="stat-row"><span class="stat-label">😊 Satisfaction</span><span class="stat-val" id="stat-sat">80%</span></div></div>
+      </div>
+      <div style="margin-top:8px"><div class="stat-row"><span class="stat-label">🌿 Sustainability</span><span class="stat-val" id="stat-sus">70%</span></div><div class="stat-bar"><div class="stat-fill" id="sus-bar" style="width:70%;background:#4ade80"></div></div></div>
+    </div>
+    <!-- Demand forecast -->
+    <div class="card" style="margin-bottom:12px">
+      <h3>📊 Demand Forecast (Round <span id="fc-round">1</span>)</h3>
+      <div class="forecast-bar">
+        <div>
+          <div style="font-size:.8rem;color:#6b7094">Predicted demand</div>
+          <div style="font-size:1.6rem;font-weight:800;color:#e8eaf6" id="pred-demand">—</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:.75rem;color:#6b7094">Likely range</div>
+          <div style="font-size:.95rem;color:#fbbf24" id="demand-range">—</div>
+        </div>
+      </div>
+      <p style="font-size:.8rem;color:#6b7094">⚠️ Actual demand revealed after decisions. Overshoot = holding costs. Undershoot = lost sales.</p>
+    </div>
+    <div class="relative">
+      <div id="submitted-overlay" class="submitted-overlay" style="display:none">
+        <div style="font-size:2.5rem">✅</div>
+        <div>Decisions submitted!</div>
+        <div style="font-size:.85rem;font-weight:400;color:#9fa3c7">Waiting for others...</div>
+      </div>
+    <!-- Decisions -->
+    <div class="card" style="margin-bottom:12px">
+      <h3>🏭 1. Choose Supplier</h3>
+      <div class="grid3" style="margin-top:8px">
+        <div class="option-card tooltip" id="sup-A" onclick="selectOption('supplier','A',this)">
+          <div class="label">Supplier A</div>
+          <div class="desc">Lithium Co.</div>
+          <div class="tag tag-green">Cheapest</div>
+          <div class="tag tag-red">Unreliable</div>
+          <div class="tip">Cost: $8/unit • Reliability: 60% • Lead: 3 weeks • Emissions: High</div>
+        </div>
+        <div class="option-card tooltip" id="sup-B" onclick="selectOption('supplier','B',this)">
+          <div class="label">Supplier B</div>
+          <div class="desc">GreenMine</div>
+          <div class="tag tag-blue">Reliable</div>
+          <div class="tag tag-green">Eco-friendly</div>
+          <div class="tip">Cost: $14/unit • Reliability: 95% • Lead: 1 week • Emissions: Low</div>
+        </div>
+        <div class="option-card tooltip" id="sup-C" onclick="selectOption('supplier','C',this)">
+          <div class="label">Supplier C</div>
+          <div class="desc">FastParts</div>
+          <div class="tag tag-purple">Fastest</div>
+          <div class="tag tag-yellow">Limited qty</div>
+          <div class="tip">Cost: $11/unit • Reliability: 80% • Lead: 0.5 weeks • Capacity: 80 units</div>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:12px">
+      <h3>🚢 2. Choose Transport</h3>
+      <div class="grid3" style="margin-top:8px">
+        <div class="option-card tooltip" id="tr-Air" onclick="selectOption('transport','Air',this)">
+          <div class="label">✈️ Air</div>
+          <div class="desc">2-day delivery</div>
+          <div class="tag tag-purple">Fastest</div>
+          <div class="tag tag-red">Costly</div>
+          <div class="tip">$18/unit • 2 day • Low delay risk • High emissions</div>
+        </div>
+        <div class="option-card tooltip" id="tr-Rail" onclick="selectOption('transport','Rail',this)">
+          <div class="label">🚂 Rail</div>
+          <div class="desc">5-day delivery</div>
+          <div class="tag tag-blue">Balanced</div>
+          <div class="tag tag-green">Moderate</div>
+          <div class="tip">$8/unit • 5 days • Moderate delay risk • Medium emissions</div>
+        </div>
+        <div class="option-card tooltip" id="tr-Sea" onclick="selectOption('transport','Sea',this)">
+          <div class="label">🚢 Sea</div>
+          <div class="desc">14-day delivery</div>
+          <div class="tag tag-green">Cheapest</div>
+          <div class="tag tag-red">Delay risk</div>
+          <div class="tip">$3/unit • 14 days • High delay risk • Low emissions</div>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:12px">
+      <h3>📦 3. Order Quantity</h3>
+      <div style="display:flex;align-items:center;justify-content:center;gap:24px;margin:16px 0">
+        <button class="qty-btn" onclick="changeQty(-10)">−</button>
+        <div class="qty-display" id="qty-display">80</div>
+        <button class="qty-btn" onclick="changeQty(10)">+</button>
+      </div>
+      <p style="font-size:.8rem;color:#6b7094;text-align:center">units to order this round</p>
+      <div id="qty-hint" style="margin-top:8px;text-align:center;font-size:.82rem;color:#fbbf24"></div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;font-size:1.1rem;padding:16px;margin-bottom:12px" onclick="submitDecision()" id="submit-btn">
+      ✅ Submit Decisions
+    </button>
+    </div><!-- /relative -->
+  </div>
+</div>
+
+<!-- SCREEN 7: ROUND RESULTS -->
+<div class="screen" id="screen-results">
+  <div style="max-width:760px;width:100%;margin:auto;padding-top:20px">
+    <h1>Round <span id="res-round">1</span> Results</h1>
+    <!-- Event -->
+    <div class="event-box" id="event-box">
+      <div class="event-icon" id="event-icon">⚡</div>
+      <div class="event-title" id="event-title">Event</div>
+      <div class="event-desc" id="event-desc">desc</div>
+    </div>
+    <!-- My outcome -->
+    <div class="card">
+      <h3>📊 Your Round Outcome</h3>
+      <div class="outcome-grid">
+        <div class="outcome-item"><div class="outcome-label">Actual Demand</div><div class="outcome-value" id="out-demand">—</div></div>
+        <div class="outcome-item"><div class="outcome-label">Units Delivered</div><div class="outcome-value" id="out-delivered">—</div></div>
+        <div class="outcome-item"><div class="outcome-label">Revenue</div><div class="outcome-value pos" id="out-revenue">—</div></div>
+        <div class="outcome-item"><div class="outcome-label">Total Cost</div><div class="outcome-value neg" id="out-cost">—</div></div>
+        <div class="outcome-item"><div class="outcome-label">Round Profit</div><div class="outcome-value" id="out-profit">—</div></div>
+        <div class="outcome-item"><div class="outcome-label">Lost Sales</div><div class="outcome-value" id="out-lost">—</div></div>
+      </div>
+      <div id="round-msgs"></div>
+    </div>
+    <!-- Leaderboard -->
+    <div class="card">
+      <h3>🏆 Leaderboard</h3>
+      <div id="leaderboard-list"></div>
+    </div>
+    <!-- Learning -->
+    <div class="card" id="learning-card">
+      <h3>🎓 Learning Outcome</h3>
+      <p id="learning-text" style="font-size:.9rem"></p>
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;font-size:1.1rem;padding:16px;margin-bottom:24px" onclick="nextRound()" id="next-btn">Next Round →</button>
+  </div>
+</div>
+
+<!-- SCREEN 8: FINAL -->
+<div class="screen" id="screen-final">
+  <div style="max-width:760px;width:100%;margin:auto;padding-top:32px">
+    <h1>🏆 Final Results</h1>
+    <div class="final-podium" id="podium"></div>
+    <div class="card">
+      <h3>📋 Final Leaderboard</h3>
+      <div id="final-leaderboard"></div>
+    </div>
+    <div class="card">
+      <h3>🎓 Key Learning Outcomes</h3>
+      <div id="final-learnings"></div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-bottom:24px" onclick="showScreen('screen-home')">Play Again</button>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY_PREFIX = 'scgame_';
+let state = {
+  role: null, // 'host' or 'player'
+  roomCode: '',
+  playerName: '',
+  totalRounds: 8,
+  decisionTime: 90,
+  round: 0,
+  // Player state
+  cash: 5000,
+  inventory: 50,
+  satisfaction: 80,
+  sustainability: 70,
+  reliabilityScore: 80,
+  totalScore: 0,
+  decisions: {supplier: null, transport: null, qty: 80},
+  submitted: false,
+  timerInterval: null,
+  timeLeft: 90,
+  // Shared (stored)
+  players: {},
+  roundResults: [],
+};
+
+const SUPPLIERS = {
+  A: {name:'Lithium Co.', cost:8, reliability:0.6, leadFactor:1.3, emissionPenalty:15, label:'Supplier A'},
+  B: {name:'GreenMine', cost:14, reliability:0.95, leadFactor:1.0, emissionPenalty:0, label:'Supplier B'},
+  C: {name:'FastParts', cost:11, reliability:0.80, leadFactor:0.9, emissionPenalty:8, label:'Supplier C', maxQty:80},
+};
+const TRANSPORT = {
+  Air:  {cost:18, delayRisk:0.05, emissions:20, label:'Air'},
+  Rail: {cost:8,  delayRisk:0.20, emissions:8,  label:'Rail'},
+  Sea:  {cost:3,  delayRisk:0.45, emissions:2,  label:'Sea'},
+};
+const EVENTS = [
+  {icon:'⛽',title:'Fuel Price Surge',desc:'Transport costs +30% this round.',effect:'transport_cost',mag:0.30},
+  {icon:'🚢',title:'Port Congestion',desc:'Sea shipments delayed. Sea users lose 20 units to late delivery.',effect:'sea_delay',mag:20},
+  {icon:'📱',title:'Social Media Trend',desc:'EV demand surges! Actual demand +25% above forecast.',effect:'demand_boost',mag:0.25},
+  {icon:'⚡',title:'Supplier Strike',desc:'Supplier A refuses orders this round. A users receive 50% qty.',effect:'supplierA_strike',mag:0.5},
+  {icon:'🌿',title:'Sustainability Audit',desc:'High-emission choices penalised. Eco-friendly choices rewarded.',effect:'sustainability_audit',mag:1},
+  {icon:'🌧️',title:'Warehouse Spoilage',desc:'Excess inventory (>100 units) loses 15 units to spoilage.',effect:'spoilage',mag:15},
+  {icon:'📉',title:'Demand Slump',desc:'Actual demand -20% below forecast.',effect:'demand_drop',mag:0.20},
+  {icon:'🏭',title:'Factory Breakdown',desc:'All players lose 10% of ordered quantity.',effect:'factory',mag:0.10},
+  {icon:'💸',title:'Carbon Tax',desc:'Air transport users pay extra $200 penalty.',effect:'carbon_tax',mag:200},
+  {icon:'🔥',title:'Demand Surge',desc:'Actual demand +30% above forecast.',effect:'demand_surge',mag:0.30},
+];
+const LEARNINGS = [
+  'Safety stock protects against demand uncertainty — but excess inventory costs money too.',
+  'Supplier reliability matters more than unit cost when disruptions hit.',
+  'Transport mode selection is a classic tradeoff: speed vs. cost vs. sustainability.',
+  'The bullwhip effect: small demand changes lead to large order fluctuations upstream.',
+  'Diversifying suppliers reduces single-point-of-failure risk.',
+  'Eco-friendly choices have upfront cost, but avoid regulatory penalties.',
+  'Customer satisfaction loss is hard to recover — prevent stockouts.',
+  'Cash flow management is critical: ordering too much locks up capital.',
+];
+
+function rng(seed) {
+  let s = seed;
+  return () => { s = (s * 16807 + 0) % 2147483647; return (s - 1) / 2147483646; };
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+let selectedRounds = 8, selectedTime = 90;
+function selectRounds(n, el) {
+  selectedRounds = n;
+  document.querySelectorAll('#screen-host .option-card').forEach(c=>{
+    if(['6 rounds','8 rounds','10 rounds'].includes(c.querySelector('.label')?.textContent)) c.classList.remove('selected');
+  });
+  el.classList.add('selected');
+}
+function selectTime(t, el) {
+  selectedTime = t;
+  const cards = document.querySelectorAll('#screen-host .option-card');
+  cards.forEach(c=>{
+    if(['60 sec','90 sec','120 sec'].includes(c.querySelector('.label')?.textContent)) c.classList.remove('selected');
+  });
+  el.classList.add('selected');
+}
+function showHostSetup() { showScreen('screen-host'); }
+function showJoin() { showScreen('screen-join'); }
+
+function genCode() {
+  const w = ['ALPHA','BETA','GAMMA','DELTA','SIGMA','OMEGA','NOVA','FLUX'];
+  return w[Math.floor(Math.random()*w.length)] + Math.floor(Math.random()*9+1);
+}
+
+async function createRoom() {
+  const name = document.getElementById('host-name').value.trim();
+  if (!name) { alert('Enter your name.'); return; }
+  state.playerName = name;
+  state.role = 'host';
+  state.totalRounds = selectedRounds;
+  state.decisionTime = selectedTime;
+  state.roomCode = genCode();
+  state.round = 0;
+  state.players = {};
+  state.players[name] = {name, cash:5000, inventory:50, satisfaction:80, sustainability:70, reliabilityScore:80, totalScore:0, submitted:false, decisions:{}};
+  await saveRoom();
+  document.getElementById('display-code').textContent = state.roomCode;
+  updateLobby();
+  showScreen('screen-lobby');
+  startLobbyPoll();
+}
+
+async function joinRoom() {
+  const name = document.getElementById('join-name').value.trim();
+  const code = document.getElementById('join-code').value.trim().toUpperCase();
+  if (!name || !code) { alert('Enter name and room code.'); return; }
+  const room = await loadRoom(code);
+  if (!room) { alert('Room not found. Check the code.'); return; }
+  state.playerName = name;
+  state.role = 'player';
+  state.roomCode = code;
+  state.totalRounds = room.config.totalRounds;
+  state.decisionTime = room.config.decisionTime;
+  room.players[name] = {name, cash:5000, inventory:50, satisfaction:80, sustainability:70, reliabilityScore:80, totalScore:0, submitted:false, decisions:{}};
+  await window.storage.set(STORAGE_KEY_PREFIX + code, JSON.stringify(room), true);
+  document.getElementById('waiting-code').textContent = code;
+  showScreen('screen-waiting');
+  startWaitingPoll();
+}
+
+async function saveRoom() {
+  const data = {
+    code: state.roomCode,
+    config: {totalRounds: state.totalRounds, decisionTime: state.decisionTime},
+    round: state.round,
+    status: 'lobby',
+    players: state.players,
+    event: null,
+    seed: Date.now(),
+  };
+  await window.storage.set(STORAGE_KEY_PREFIX + state.roomCode, JSON.stringify(data), true);
+}
+
+async function loadRoom(code) {
+  try {
+    const r = await window.storage.get(STORAGE_KEY_PREFIX + (code || state.roomCode), true);
+    return r ? JSON.parse(r.value) : null;
+  } catch(e) { return null; }
+}
+
+async function updateRoom(updates) {
+  const room = await loadRoom();
+  if (!room) return null;
+  Object.assign(room, updates);
+  await window.storage.set(STORAGE_KEY_PREFIX + state.roomCode, JSON.stringify(room), true);
+  return room;
+}
+
+function updateLobby() {
+  const count = Object.keys(state.players).length;
+  document.getElementById('player-count-label').textContent = count + ' player' + (count!==1?'s':'') + ' joined';
+  const list = document.getElementById('playerList');
+  list.innerHTML = Object.values(state.players).map(p =>
+    `<div class="player-chip"><div class="dot-green"></div>${esc(p.name)}</div>`
+  ).join('');
+}
+
+let lobbyInterval;
+function startLobbyPoll() {
+  lobbyInterval = setInterval(async () => {
+    const room = await loadRoom();
+    if (!room) return;
+    state.players = room.players;
+    updateLobby();
+  }, 2000);
+}
+
+let waitingInterval;
+function startWaitingPoll() {
+  waitingInterval = setInterval(async () => {
+    const room = await loadRoom();
+    if (!room) return;
+    const count = Object.keys(room.players).length;
+    document.getElementById('waiting-players').textContent = count + ' player' + (count!==1?'s':'') + ' in lobby';
+    document.getElementById('waiting-list').innerHTML = Object.keys(room.players).map(n=>
+      `<div class="player-chip" style="display:inline-flex;margin:4px"><div class="dot-green"></div>${esc(n)}</div>`
+    ).join('');
+    if (room.status === 'playing') {
+      clearInterval(waitingInterval);
+      loadPlayerFromRoom(room);
+      beginRound(room);
+    }
+  }, 2000);
+}
+
+function loadPlayerFromRoom(room) {
+  const me = room.players[state.playerName];
+  if (!me) return;
+  state.cash = me.cash; state.inventory = me.inventory;
+  state.satisfaction = me.satisfaction; state.sustainability = me.sustainability;
+  state.reliabilityScore = me.reliabilityScore; state.totalScore = me.totalScore;
+  state.round = room.round;
+  state.totalRounds = room.config.totalRounds;
+  state.decisionTime = room.config.decisionTime;
+  state.players = room.players;
+}
+
+async function startGame() {
+  if (lobbyInterval) clearInterval(lobbyInterval);
+  const room = await loadRoom();
+  room.status = 'playing';
+  room.round = 1;
+  room.seed = Date.now();
+  room.event = pickEvent(room.seed, 1);
+  // Reset all players
+  Object.keys(room.players).forEach(n => {
+    room.players[n] = {name:n, cash:5000, inventory:50, satisfaction:80, sustainability:70, reliabilityScore:80, totalScore:0, submitted:false, decisions:{}};
+  });
+  await window.storage.set(STORAGE_KEY_PREFIX + state.roomCode, JSON.stringify(room), true);
+  loadPlayerFromRoom(room);
+  beginRound(room);
+}
+
+function pickEvent(seed, round) {
+  const r = rng(seed + round * 9999);
+  r(); r();
+  return EVENTS[Math.floor(r() * EVENTS.length)];
+}
+
+function getForecast(seed, round) {
+  const r = rng(seed + round * 1234);
+  const base = 80 + Math.floor(r() * 60); // 80-140
+  return base;
+}
+
+function getActualDemand(seed, round, event) {
+  const r = rng(seed + round * 5678);
+  const forecast = getForecast(seed, round);
+  let actual = forecast + Math.floor((r() - 0.5) * 40);
+  if (event.effect === 'demand_boost') actual = Math.round(actual * (1 + event.mag));
+  if (event.effect === 'demand_drop') actual = Math.round(actual * (1 - event.mag));
+  if (event.effect === 'demand_surge') actual = Math.round(actual * (1 + event.mag));
+  return Math.max(20, actual);
+}
+
+async function beginRound(room) {
+  state.round = room.round;
+  state.submitted = false;
+  state.decisions = {supplier:null, transport:null, qty:80};
+  // Reset UI selections
+  document.querySelectorAll('#screen-game .option-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('submitted-overlay').style.display = 'none';
+  document.getElementById('submit-btn').disabled = false;
+  const seed = room.seed;
+  const forecast = getForecast(seed, state.round);
+  document.getElementById('round-label').textContent = state.round + '/' + state.totalRounds;
+  document.getElementById('fc-round').textContent = state.round;
+  document.getElementById('pred-demand').textContent = forecast;
+  document.getElementById('demand-range').textContent = (forecast-20) + ' – ' + (forecast+20);
+  updateStatBars();
+  buildRoundDots();
+  updateQtyHint(forecast);
+  showScreen('screen-game');
+  startTimer();
+}
+
+function buildRoundDots() {
+  const d = document.getElementById('round-dots');
+  d.innerHTML = '';
+  for(let i=1;i<=state.totalRounds;i++){
+    const dot = document.createElement('div');
+    dot.className = 'round-dot' + (i<state.round?' done':(i===state.round?' active':''));
+    d.appendChild(dot);
+  }
+}
+
+function updateStatBars() {
+  document.getElementById('stat-cash').textContent = '$'+Math.round(state.cash).toLocaleString();
+  document.getElementById('stat-inv').textContent = Math.round(state.inventory);
+  document.getElementById('stat-sat').textContent = Math.round(state.satisfaction)+'%';
+  document.getElementById('stat-sus').textContent = Math.round(state.sustainability)+'%';
+  document.getElementById('sus-bar').style.width = Math.max(0,state.sustainability)+'%';
+}
+
+function startTimer() {
+  if (state.timerInterval) clearInterval(state.timerInterval);
+  state.timeLeft = state.decisionTime;
+  const display = document.getElementById('timer-display');
+  display.style.color = '#fbbf24';
+  state.timerInterval = setInterval(() => {
+    state.timeLeft--;
+    display.textContent = state.timeLeft;
+    if (state.timeLeft <= 10) display.style.color = '#f87171';
+    if (state.timeLeft <= 0) {
+      clearInterval(state.timerInterval);
+      if (!state.submitted) autoSubmit();
+    }
+  }, 1000);
+}
+
+function autoSubmit() {
+  if (!state.decisions.supplier) state.decisions.supplier = 'B';
+  if (!state.decisions.transport) state.decisions.transport = 'Rail';
+  submitDecision();
+}
+
+function selectOption(type, value, el) {
+  if (state.submitted) return;
+  const prefix = type === 'supplier' ? 'sup-' : 'tr-';
+  document.querySelectorAll(`[id^="${prefix}"]`).forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  state.decisions[type] = value;
+  updateQtyHint();
+}
+
+function changeQty(delta) {
+  if (state.submitted) return;
+  state.decisions.qty = Math.max(10, Math.min(200, state.decisions.qty + delta));
+  document.getElementById('qty-display').textContent = state.decisions.qty;
+  updateQtyHint();
+}
+
+function updateQtyHint(forecast) {
+  const f = forecast || parseInt(document.getElementById('pred-demand').textContent) || 100;
+  const q = state.decisions.qty;
+  const hint = document.getElementById('qty-hint');
+  if (q < f * 0.7) hint.textContent = '⚠️ Very low — high stockout risk';
+  else if (q < f * 0.9) hint.textContent = '📉 Slightly low — some stockout risk';
+  else if (q > f * 1.5) hint.textContent = '📦 Very high — excess holding cost likely';
+  else if (q > f * 1.2) hint.textContent = '📦 Moderately high — watch holding costs';
+  else hint.textContent = '✅ Reasonable quantity for forecast';
+}
+
+async function submitDecision() {
+  if (state.submitted) return;
+  if (!state.decisions.supplier || !state.decisions.transport) {
+    alert('Please select a supplier and transport mode.'); return;
+  }
+  if (state.timerInterval) clearInterval(state.timerInterval);
+  state.submitted = true;
+  document.getElementById('submitted-overlay').style.display = 'flex';
+  // Save to shared storage
+  const room = await loadRoom();
+  if (!room) return;
+  room.players[state.playerName].decisions = {...state.decisions};
+  room.players[state.playerName].submitted = true;
+  await window.storage.set(STORAGE_KEY_PREFIX + state.roomCode, JSON.stringify(room), true);
+  startResultPoll(room.seed);
+}
+
+let resultInterval;
+function startResultPoll(seed) {
+  let waited = 0;
+  resultInterval = setInterval(async () => {
+    waited += 2;
+    const room = await loadRoom();
+    if (!room) return;
+    const players = Object.values(room.players);
+    const allDone = players.every(p=>p.submitted);
+    if (allDone || waited >= 25) {
+      clearInterval(resultInterval);
+      processResults(room, seed);
+    }
+  }, 2000);
+}
+
+async function processResults(room, seed) {
+  const event = room.event || pickEvent(seed, state.round);
+  const actualDemand = getActualDemand(seed, state.round, event);
+  const me = room.players[state.playerName];
+  const d = me.decisions;
+  const sup = SUPPLIERS[d.supplier] || SUPPLIERS.B;
+  const tr = TRANSPORT[d.transport] || TRANSPORT.Rail;
+
+  // Check supplier failure
+  const r = rng(seed + state.round * 777 + Object.keys(room.players).indexOf(state.playerName));
+  r(); r();
+  const supSuccess = r() < sup.reliability;
+
+  // Qty capped by supplier C
+  let orderedQty = d.qty;
+  if (d.supplier === 'C') orderedQty = Math.min(orderedQty, 80);
+
+  // Event effects on qty
+  let deliveredQty = supSuccess ? orderedQty : Math.floor(orderedQty * 0.5);
+  if (event.effect === 'supplierA_strike' && d.supplier === 'A') deliveredQty = Math.floor(deliveredQty * 0.5);
+  if (event.effect === 'sea_delay' && d.transport === 'Sea') deliveredQty = Math.max(0, deliveredQty - event.mag);
+  if (event.effect === 'factory') deliveredQty = Math.floor(deliveredQty * (1 - event.mag));
+
+  // Inventory update
+  const beginInv = state.inventory;
+  const totalAvail = beginInv + deliveredQty;
+  const unitsSold = Math.min(totalAvail, actualDemand);
+  const lostSales = Math.max(0, actualDemand - totalAvail);
+  let endInv = Math.max(0, totalAvail - unitsSold);
+
+  // Spoilage
+  if (event.effect === 'spoilage' && endInv > 100) endInv = Math.max(0, endInv - event.mag);
+
+  // Costs
+  let orderCost = orderedQty * sup.cost;
+  let transportCost = orderedQty * tr.cost;
+  if (event.effect === 'transport_cost') transportCost *= (1 + event.mag);
+  if (event.effect === 'carbon_tax' && d.transport === 'Air') transportCost += event.mag;
+  const holdingCost = endInv * 2;
+  const revenue = unitsSold * 25;
+  const lostRevenue = lostSales * 10;
+  const roundProfit = revenue - orderCost - transportCost - holdingCost - lostRevenue;
+
+  // Satisfaction
+  const satChange = lostSales > 20 ? -15 : lostSales > 5 ? -5 : 5;
+  let newSat = Math.max(0, Math.min(100, state.satisfaction + satChange));
+
+  // Sustainability
+  let susChange = -sup.emissionPenalty - tr.emissions;
+  if (event.effect === 'sustainability_audit') {
+    susChange += (d.supplier === 'B' ? 20 : -10);
+    susChange += (d.transport === 'Sea' ? 10 : d.transport === 'Air' ? -10 : 0);
+  }
+  let newSus = Math.max(0, Math.min(100, state.sustainability + susChange));
+
+  // Reliability score
+  const relChange = supSuccess ? 5 : -10;
+  let newRel = Math.max(0, Math.min(100, state.reliabilityScore + relChange));
+
+  // Inventory efficiency score (0-100, penalise excess)
+  const invEff = Math.max(0, 100 - Math.abs(endInv - 20) * 1.5);
+
+  // Update state
+  state.cash += roundProfit;
+  state.inventory = endInv;
+  state.satisfaction = newSat;
+  state.sustainability = newSus;
+  state.reliabilityScore = newRel;
+
+  // Composite score this round
+  const profitScore = Math.max(0, Math.min(100, (roundProfit / 2000) * 100));
+  const roundScore = profitScore*0.4 + newSat*0.25 + newSus*0.15 + invEff*0.10 + newRel*0.10;
+  state.totalScore += roundScore;
+
+  // Save updated player
+  const updatedRoom = await loadRoom();
+  updatedRoom.players[state.playerName] = {
+    name: state.playerName, cash: state.cash, inventory: state.inventory,
+    satisfaction: state.satisfaction, sustainability: state.sustainability,
+    reliabilityScore: state.reliabilityScore, totalScore: state.totalScore,
+    submitted: false, decisions: {}
+  };
+  // Prepare next round
+  if (state.round < state.totalRounds) {
+    updatedRoom.round = state.round + 1;
+    updatedRoom.event = pickEvent(updatedRoom.seed, state.round + 1);
+  } else {
+    updatedRoom.status = 'finished';
+  }
+  await window.storage.set(STORAGE_KEY_PREFIX + state.roomCode, JSON.stringify(updatedRoom), true);
+
+  // Render results
+  showResults({event, actualDemand, deliveredQty, unitsSold, lostSales, revenue, orderCost, transportCost, holdingCost, roundProfit, endInv, supSuccess}, updatedRoom);
+}
+
+function showResults(data, room) {
+  const {event, actualDemand, deliveredQty, unitsSold, lostSales, revenue, orderCost, transportCost, holdingCost, roundProfit} = data;
+  document.getElementById('res-round').textContent = state.round;
+  document.getElementById('event-icon').textContent = event.icon;
+  document.getElementById('event-title').textContent = event.title;
+  document.getElementById('event-desc').textContent = event.desc;
+  document.getElementById('out-demand').textContent = actualDemand + ' units';
+  document.getElementById('out-delivered').textContent = deliveredQty + ' units';
+  document.getElementById('out-revenue').textContent = '$'+Math.round(revenue).toLocaleString();
+  document.getElementById('out-cost').textContent = '$'+Math.round(orderCost+transportCost+holdingCost).toLocaleString();
+  const profitEl = document.getElementById('out-profit');
+  profitEl.textContent = (roundProfit>=0?'+':'')+'$'+Math.round(roundProfit).toLocaleString();
+  profitEl.className = 'outcome-value ' + (roundProfit>=0?'pos':'neg');
+  document.getElementById('out-lost').textContent = lostSales + ' units';
+  // Messages
+  const msgs = [];
+  if (!data.supSuccess) msgs.push({cls:'msg-warn', text:'⚠️ Supplier delivery failed — only 50% received.'});
+  if (lostSales > 20) msgs.push({cls:'msg-bad', text:'📉 Large stockout: '+lostSales+' lost sales. Customer satisfaction drops.'});
+  if (data.endInv > 80) msgs.push({cls:'msg-warn', text:'📦 High ending inventory: '+data.endInv+' units. Holding costs rise.'});
+  if (roundProfit >= 1500) msgs.push({cls:'msg-good', text:'💰 Excellent round profit!'});
+  document.getElementById('round-msgs').innerHTML = msgs.map(m=>`<div class="msg ${m.cls}">${m.text}</div>`).join('');
+  // Learning
+  document.getElementById('learning-text').textContent = LEARNINGS[(state.round-1) % LEARNINGS.length];
+  // Leaderboard
+  renderLeaderboard(room.players, 'leaderboard-list');
+  const isLast = state.round >= state.totalRounds;
+  const nextBtn = document.getElementById('next-btn');
+  nextBtn.textContent = isLast ? '🏆 See Final Results' : 'Next Round →';
+  showScreen('screen-results');
+}
+
+function renderLeaderboard(players, elId) {
+  const sorted = Object.values(players).sort((a,b)=>b.totalScore-a.totalScore);
+  const el = document.getElementById(elId);
+  el.innerHTML = sorted.map((p,i) => {
+    const rankClass = i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-other';
+    const isMe = p.name === state.playerName;
+    return `<div class="leaderboard-row" style="${isMe?'border:1px solid #5c60f5;':''}">
+      <div class="rank-badge ${rankClass}">${i+1}</div>
+      <div style="font-weight:${isMe?700:400};color:${isMe?'#7c83f5':'#e8eaf6'}">${esc(p.name)}${isMe?' (you)':''}</div>
+      <div class="player-score">${Math.round(p.totalScore)}<span style="font-size:.75rem;color:#6b7094"> pts</span></div>
+      <div style="font-size:.8rem;color:#6b7094">$${Math.round(p.cash).toLocaleString()}</div>
+    </div>`;
+  }).join('');
+}
+
+async function nextRound() {
+  const room = await loadRoom();
+  if (!room) return;
+  if (room.status === 'finished' || state.round >= state.totalRounds) {
+    showFinal(room);
+    return;
+  }
+  beginRound(room);
+}
+
+function showFinal(room) {
+  const sorted = Object.values(room.players).sort((a,b)=>b.totalScore-a.totalScore);
+  // Podium
+  const top3 = sorted.slice(0,3);
+  const podiumEl = document.getElementById('podium');
+  const order = top3.length >= 3 ? [top3[1],top3[0],top3[2]] : top3.length === 2 ? [top3[1],top3[0]] : [top3[0]];
+  const heights = ['podium-2','podium-1','podium-3'];
+  podiumEl.innerHTML = order.map((p,i)=>{
+    const rank = sorted.indexOf(p)+1;
+    const cls = rank===1?'podium-1':rank===2?'podium-2':'podium-3';
+    return `<div class="podium-col">
+      <div class="podium-name">${esc(p.name)}</div>
+      <div class="podium-block ${cls}">#${rank}</div>
+    </div>`;
+  }).join('');
+  renderLeaderboard(room.players, 'final-leaderboard');
+  // Learnings summary
+  document.getElementById('final-learnings').innerHTML = LEARNINGS.map(l=>
+    `<div class="msg msg-info" style="margin-bottom:8px">✅ ${l}</div>`
+  ).join('');
+  showScreen('screen-final');
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>
